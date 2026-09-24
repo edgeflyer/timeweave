@@ -39,6 +39,64 @@ const (
 	CodeInvalidToken    = 2005 // JWT 无效或过期
 )
 
+// Goal 模块专用错误码（3xxx）
+const (
+	CodeGoalNotFound     = 3001 // 目标不存在
+	CodeGoalAccessDenied = 3002 // 无权访问此目标（非所属用户）
+)
+
+// Milestone 模块专用错误码（4xxx）
+const (
+	CodeMilestoneNotFound         = 4001 // 阶段不存在
+	CodeMilestoneAccessDenied     = 4002 // 无权访问此阶段
+	CodeMilestoneGoalNotFound     = 4003 // 隶属的目标不存在
+	CodeMilestoneGoalAccessDenied = 4004 // 无权在此目标下创建阶段
+)
+
+// Task 模块专用错误码（5xxx）
+const (
+	CodeTaskNotFound                  = 5001
+	CodeTaskAccessDenied              = 5002
+	CodeTaskMilestoneNotFound         = 5003
+	CodeTaskMilestoneAccessDenied     = 5004
+	CodeTaskInvalidStatusTransition   = 5005
+	CodeTaskAlreadyDone               = 5006
+)
+
+// Schedule 模块专用错误码（6xxx）
+const (
+	CodeScheduleBlockNotFound     = 6001
+	CodeScheduleBlockAccessDenied = 6002
+	CodeScheduleTimeConflict      = 6003
+	CodeScheduleNoTasks           = 6004
+	CodeScheduleInsufficientTime  = 6005
+)
+
+// Timer 模块专用错误码（7xxx）
+const (
+	CodeTimerSessionNotFound     = 7001
+	CodeTimerSessionAccessDenied = 7002
+	CodeTimerInvalidTransition   = 7003
+	CodeTimerTaskNotFound        = 7004
+	CodeTimerTaskAccessDenied    = 7005
+	CodeTimerTaskNotActive       = 7006
+)
+
+// Execution 模块专用错误码（8xxx）—— Observe 层：Timer complete 落库 TaskExecution。
+const (
+	CodeExecutionNotFound         = 8001 // TaskExecution 不存在
+	CodeExecutionTaskNotFound     = 8002 // 关联的 Task 不存在
+	CodeExecutionTaskAccessDenied = 8003 // 无权访问关联的 Task
+)
+
+// TimeProfile 模块专用错误码（9xxx）—— Learn 层：UserTimeProfile 画像管理。
+//
+// 注：9001/9002 已被通用错误码占用，本模块从 9003 开始。
+const (
+	CodeTimeProfileNotFound    = 9003 // 某 task_type 的画像不存在
+	CodeTimeProfileInvalidType = 9004 // task_type 枚举值非法
+)
+
 // Body 是统一响应体。
 type Body struct {
 	Code    int         `json:"code"`

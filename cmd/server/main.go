@@ -44,7 +44,11 @@ func main() {
 	}()
 
 	// 4. 自动迁移（Phase 1 简化版，正式项目建议用 atlas / golang-migrate）
-	if err := gormDB.AutoMigrate(&models.User{}); err != nil {
+	if err := gormDB.AutoMigrate(
+		&models.User{}, &models.Goal{}, &models.Milestone{}, &models.Task{},
+		&models.ScheduleBlock{}, &models.TimerSession{},
+		&models.TaskExecution{}, &models.UserTimeProfile{}, // Sprint 5: Observe + Learn
+	); err != nil {
 		slog.Error("automigrate failed", "err", err)
 		os.Exit(1)
 	}
