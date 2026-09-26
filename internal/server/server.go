@@ -50,6 +50,10 @@ func New(cfg *config.Config, db *gorm.DB) *Server {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	// 前端静态页面（单文件 SPA，零构建）
+	engine.StaticFile("/", "./web/index.html")
+	engine.StaticFile("/index.html", "./web/index.html")
+
 	s := &Server{
 		cfg:    cfg,
 		db:     db,
@@ -123,16 +127,16 @@ func (s *Server) registerRoutes() {
 	{
 		apiGroup.POST("/goals", goalHandler.Create)
 		apiGroup.GET("/goals", goalHandler.List)
-		apiGroup.GET("/goals/:id", goalHandler.Get)
-		apiGroup.PUT("/goals/:id", goalHandler.Update)
-		apiGroup.DELETE("/goals/:id", goalHandler.Delete)
+		apiGroup.GET("/goals/:goalID", goalHandler.Get)
+		apiGroup.PUT("/goals/:goalID", goalHandler.Update)
+		apiGroup.DELETE("/goals/:goalID", goalHandler.Delete)
 
 		// Milestone 嵌套路由
 		apiGroup.POST("/goals/:goalID/milestones", milestoneHandler.Create)
 		apiGroup.GET("/goals/:goalID/milestones", milestoneHandler.List)
-		apiGroup.GET("/milestones/:id", milestoneHandler.Get)
-		apiGroup.PUT("/milestones/:id", milestoneHandler.Update)
-		apiGroup.DELETE("/milestones/:id", milestoneHandler.Delete)
+		apiGroup.GET("/milestones/:milestoneID", milestoneHandler.Get)
+		apiGroup.PUT("/milestones/:milestoneID", milestoneHandler.Update)
+		apiGroup.DELETE("/milestones/:milestoneID", milestoneHandler.Delete)
 
 		// Task 嵌套路由
 		apiGroup.POST("/milestones/:milestoneID/tasks", taskHandler.Create)

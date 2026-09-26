@@ -72,7 +72,7 @@ func (r *Repository) ListByUserID(ctx context.Context, userID uint64, status *in
 	}
 	offset := (page - 1) * pageSize
 	if err := tx.
-		Order("due_date ASC NULLS LAST, priority DESC, id ASC").
+		Order("due_date IS NULL, due_date ASC, priority DESC, id ASC").
 		Limit(pageSize).Offset(offset).
 		Find(&list).Error; err != nil {
 		return nil, 0, err
@@ -82,11 +82,14 @@ func (r *Repository) ListByUserID(ctx context.Context, userID uint64, status *in
 
 // ListActiveByUserID 列出当前用户所有未完成任务（status IN todo/doing/overdue）。
 // 给 Scheduler 用：取出待排 Task 池。
+//
+// 排序：优先级降序 → 截止时间升序（NULL 排最后，MySQL 写法）→ ID 兜底稳定序。
+// 注：MySQL 不支持 NULLS LAST，用 "due_date IS NULL"（false=0 排前）等价实现。
 func (r *Repository) ListActiveByUserID(ctx context.Context, userID uint64) ([]models.Task, error) {
 	var list []models.Task
 	err := r.db.WithContext(ctx).
 		Where("user_id = ? AND status IN ?", userID, []int8{0, 1, 4}). // 0=todo 1=doing 4=overdue
-		Order("priority DESC, due_date ASC NULLS LAST, id ASC").
+		Order("priority DESC, due_date IS NULL, due_date ASC, id ASC").
 		Find(&list).Error
 	if err != nil {
 		return nil, err

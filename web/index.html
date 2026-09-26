@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuestOS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8; color: #2c2c2a; font-size: 14px; line-height: 1.6;
+  }
+  button {
+    border: 1px solid #d8d6cd; background: #fff; color: #2c2c2a;
+    padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  button:hover { border-color: #378add; color: #185fa5; }
+  button.primary { background: #185fa5; border-color: #185fa5; color: #fff; }
+  button.primary:hover { background: #0c447c; }
+  button.danger { color: #a32d2d; }
+  button.danger:hover { border-color: #a32d2d; }
+  button.mini { padding: 2px 8px; font-size: 12px; }
+  input, select, textarea {
+    border: 1px solid #d8d6cd; border-radius: 6px; padding: 6px 10px;
+    font-size: 13px; width: 100%; background: #fff;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #378add; }
+  label { font-size: 12px; color: #5f5e5a; display: block; margin-bottom: 4px; }
+  .field { margin-bottom: 12px; }
+
+  /* ====== 登录页 ====== */
+  #authPage {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  }
+  .auth-card {
+    background: #fff; border: 1px solid #e4e2da; border-radius: 12px;
+    padding: 36px 40px; width: 380px;
+  }
+  .auth-card h1 { font-size: 22px; margin-bottom: 4px; color: #185fa5; }
+  .auth-card .sub { font-size: 12px; color: #888780; margin-bottom: 24px; }
+  .auth-card .switch { text-align: center; margin-top: 16px; font-size: 12px; color: #5f5e5a; }
+  .auth-card .switch a { color: #185fa5; cursor: pointer; }
+
+  /* ====== 主布局 ====== */
+  .topbar {
+    background: #fff; border-bottom: 1px solid #e4e2da; padding: 0 24px;
+    display: flex; align-items: center; height: 52px; position: sticky; top: 0; z-index: 10;
+  }
+  .topbar .logo { font-weight: 600; color: #185fa5; font-size: 16px; margin-right: 28px; }
+  .topbar nav { display: flex; gap: 4px; flex: 1; }
+  .topbar nav a {
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; color: #5f5e5a; font-size: 13px;
+  }
+  .topbar nav a.active { background: #e6f1fb; color: #185fa5; font-weight: 500; }
+  .topbar .user { font-size: 12px; color: #888780; }
+
+  .container { max-width: 1080px; margin: 24px auto; padding: 0 24px; }
+  .card {
+    background: #fff; border: 1px solid #e4e2da; border-radius: 10px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .card h3 { font-size: 15px; margin-bottom: 14px; color: #2c2c2a; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+  .toolbar input, .toolbar select { width: auto; }
+
+  /* ====== 目标树 ====== */
+  .goal-item { border: 1px solid #e4e2da; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .goal-head { display: flex; align-items: center; gap: 10px; }
+  .goal-head .title { font-weight: 600; flex: 1; }
+  .goal-head .meta { font-size: 12px; color: #888780; }
+  .ms-section { margin: 10px 0 0 20px; }
+  .ms-item {
+    border-left: 3px solid #b5d4f4; padding: 8px 12px; margin: 8px 0;
+    background: #fafbfc; border-radius: 0 6px 6px 0;
+  }
+  .ms-item .ms-head { display: flex; align-items: center; gap: 8px; }
+  .ms-item .ms-title { font-weight: 500; flex: 1; }
+  .task-list { margin: 6px 0 0 16px; }
+  .task-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+    border-bottom: 1px dashed #eee; font-size: 13px;
+  }
+  .task-item .t-title { flex: 1; }
+  .task-item.done .t-title { text-decoration: line-through; color: #888780; }
+  .tag {
+    display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px;
+    background: #f1efe8; color: #5f5e5a;
+  }
+  .tag.status-0 { background: #e6f1fb; color: #0c447c; }
+  .tag.status-1 { background: #faeeda; color: #854f0b; }
+  .tag.status-2 { background: #eaf3de; color: #27500a; }
+  .tag.status-3 { background: #f1efe8; color: #888780; }
+  .tag.status-4 { background: #fcebeb; color: #a32d2d; }
+  .tag.type { background: #eeedfe; color: #3c3489; }
+
+  /* ====== 日程时间线 ====== */
+  .block-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 14px;
+    border: 1px solid #e4e2da; border-radius: 8px; margin-bottom: 8px; background: #fff;
+  }
+  .block-item .time {
+    font-family: "SF Mono", Menlo, monospace; font-size: 13px; color: #185fa5;
+    min-width: 120px; font-weight: 500;
+  }
+  .block-item .b-title { flex: 1; }
+  .block-item .reason { font-size: 11px; color: #888780; }
+  .block-item .score { font-size: 11px; color: #888780; }
+  .block-item.b-active { border-color: #ef9f27; background: #fdf8ee; }
+
+  /* ====== 计时器 ====== */
+  .timer-big {
+    text-align: center; font-family: "SF Mono", Menlo, monospace;
+    font-size: 52px; font-weight: 600; letter-spacing: 2px; color: #185fa5;
+    margin: 20px 0; font-variant-numeric: tabular-nums;
+  }
+  .timer-state { text-align: center; font-size: 13px; color: #5f5e5a; margin-bottom: 16px; }
+  .timer-btns { display: flex; gap: 10px; justify-content: center; }
+  .timer-btns button { padding: 8px 24px; font-size: 14px; }
+
+  /* ====== 表格 ====== */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: #888780; font-weight: 500; font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #e4e2da; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f1efe8; }
+
+  /* ====== 杂项 ====== */
+  #toast {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+    background: #2c2c2a; color: #fff; padding: 8px 20px; border-radius: 8px;
+    font-size: 13px; display: none; z-index: 100; opacity: 0.95;
+  }
+  #toast.err { background: #a32d2d; }
+  .empty { color: #888780; text-align: center; padding: 30px 0; font-size: 13px; }
+  .modal-mask {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    z-index: 50; align-items: center; justify-content: center;
+  }
+  .modal {
+    background: #fff; border-radius: 12px; padding: 24px 28px; width: 440px; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h3 { margin-bottom: 16px; font-size: 15px; }
+  .modal .btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  .row { display: flex; gap: 12px; }
+  .row .field { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ============ 登录页 ============ -->
+<div id="authPage">
+  <div class="auth-card">
+    <h1>QuestOS</h1>
+    <div class="sub">自适应时间管理系统 · v1.0</div>
+    <form id="loginForm">
+      <div class="field">
+        <label>邮箱</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input type="password" id="loginPassword" placeholder="至少 8 位" required>
+      </div>
+      <button type="submit" class="primary" style="width:100%;padding:9px">登录</button>
+      <div class="switch">还没有账号？<a id="goRegister">去注册</a></div>
+    </form>
+    <form id="registerForm" style="display:none">
+      <div class="field">
+        <label>昵称</label>
+        <input type="text" id="regNickname" placeholder="怎么称呼你" required>
+      </div>
+      <div class="field">
+        <label>邮箱</label>
+        <input type="email" id="regEmail" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input type="password" id="regPassword" placeholder="至少 8 位" required>
+      </div>
+      <button type="submit" class="primary" style="width:100%;padding:9px">注册</button>
+      <div class="switch">已有账号？<a id="goLogin">去登录</a></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ 主应用 ============ -->
+<div id="appPage" style="display:none">
+  <div class="topbar">
+    <div class="logo">QuestOS</div>
+    <nav>
+      <a data-tab="goals" class="active">目标</a>
+      <a data-tab="schedule">日程</a>
+      <a data-tab="timer">计时器</a>
+      <a data-tab="profile">画像</a>
+    </nav>
+    <span class="user" id="userLabel"></span>
+    <button class="mini" style="margin-left:14px" onclick="logout()">退出</button>
+  </div>
+
+  <div class="container">
+    <!-- Tab: 目标 -->
+    <div id="tab-goals">
+      <div class="toolbar">
+        <button class="primary" onclick="showGoalModal()">+ 新目标</button>
+        <button onclick="loadGoals()">刷新</button>
+      </div>
+      <div id="goalTree"></div>
+    </div>
+
+    <!-- Tab: 日程 -->
+    <div id="tab-schedule" style="display:none">
+      <div class="card">
+        <div class="toolbar">
+          <input type="date" id="scheduleDate" onchange="loadSchedule()">
+          <button class="primary" onclick="planDay(false)">智能排程</button>
+          <button onclick="planDay(true)">清空重排</button>
+          <button onclick="replanDay()">重排（自适应）</button>
+          <button onclick="loadSchedule()">刷新</button>
+        </div>
+        <div id="scheduleList"></div>
+      </div>
+    </div>
+
+    <!-- Tab: 计时器 -->
+    <div id="tab-timer" style="display:none">
+      <div class="card">
+        <h3>当前计时</h3>
+        <div id="timerArea"></div>
+      </div>
+      <div class="card">
+        <h3>最近会话</h3>
+        <div id="timerHistory"></div>
+      </div>
+    </div>
+
+    <!-- Tab: 画像 -->
+    <div id="tab-profile" style="display:none">
+      <div class="card">
+        <h3>我的时间画像 <span style="font-size:11px;color:#888780;font-weight:400">（系统学习你对每类任务的真实耗时）</span></h3>
+        <div id="profileList"></div>
+      </div>
+      <div class="card">
+        <h3>执行历史 <span style="font-size:11px;color:#888780;font-weight:400">（Observe 层记录）</span></h3>
+        <div id="executionList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 弹窗 ============ -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+/* ================= 基础设施 ================= */
+const API = '/api/v1';
+let token = localStorage.getItem('token') || '';
+let nickname = localStorage.getItem('nickname') || '';
+let activeTimer = null;      // 当前活跃计时会话
+let tickHandle = null;       // 计时器 interval
+let tasksCache = {};         // task_id -> task（用于展示标题）
+
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = isErr ? 'err' : '';
+  t.style.display = 'block';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.style.display = 'none', 2200);
+}
+
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  let res;
+  try {
+    res = await fetch(API + path, opts);
+  } catch (e) {
+    throw new Error('网络错误，服务是否已启动？');
+  }
+  const json = await res.json();
+  if (json.code !== 0) {
+    if (json.code === 1002 || json.code === 2005) { logout(); }
+    throw new Error(json.message || ('错误码 ' + json.code));
+  }
+  return json.data;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function fmtDT(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getMonth()+1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function todayStr(offset) {
+  const d = new Date();
+  if (offset) d.setDate(d.getDate() + offset);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function fmtDur(sec) {
+  sec = Math.max(0, sec|0);
+  const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
+  const p = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
+}
+
+const TASK_STATUS = {0:'待办', 1:'进行中', 2:'已完成', 3:'已跳过', 4:'已逾期'};
+const BLOCK_STATUS = {0:'待执行', 1:'执行中', 2:'已完成', 3:'已跳过', 4:'已错过'};
+const TIMER_STATUS = {0:'计时中', 1:'已暂停', 2:'已完成', 3:'已放弃'};
+
+/* ================= 认证 ================= */
+document.getElementById('goRegister').onclick = () => {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = '';
+};
+document.getElementById('goLogin').onclick = () => {
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = '';
+};
+
+document.getElementById('loginForm').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const data = await loginDirect();
+    onAuthed(data);
+  } catch (err) { toast(err.message, true); }
+};
+
+document.getElementById('registerForm').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const data = await await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nickname: document.getElementById('regNickname').value.trim(),
+        email: document.getElementById('regEmail').value.trim(),
+        password: document.getElementById('regPassword').value,
+      }),
+    }).then(r => r.json());
+    if (data.code !== 0) throw new Error(data.message);
+    onAuthed(data.data);
+  } catch (err) { toast(err.message, true); }
+};
+
+async function loginDirect() {
+  // 登录走根路径（不在 /api/v1 下）
+  const res = await fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value,
+    }),
+  });
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.message);
+  return json.data;
+}
+
+function onAuthed(data) {
+  token = data.token;
+  nickname = data.nickname;
+  localStorage.setItem('token', token);
+  localStorage.setItem('nickname', nickname);
+  enterApp();
+}
+
+function logout() {
+  token = '';
+  localStorage.removeItem('token');
+  localStorage.removeItem('nickname');
+  location.reload();
+}
+
+function enterApp() {
+  document.getElementById('authPage').style.display = 'none';
+  document.getElementById('appPage').style.display = '';
+  document.getElementById('userLabel').textContent = nickname;
+  document.getElementById('scheduleDate').value = todayStr();
+  loadGoals();
+  pollActiveTimer();
+}
+
+/* ================= Tab 切换 ================= */
+document.querySelectorAll('.topbar nav a').forEach(a => {
+  a.onclick = () => {
+    document.querySelectorAll('.topbar nav a').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    ['goals','schedule','timer','profile'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === a.dataset.tab ? '' : 'none';
+    });
+    if (a.dataset.tab === 'schedule') loadSchedule();
+    if (a.dataset.tab === 'timer') { pollActiveTimer(); loadTimerHistory(); }
+    if (a.dataset.tab === 'profile') { loadProfiles(); loadExecutions(); }
+  };
+});
+
+/* ================= 弹窗 ================= */
+function openModal(html) {
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalMask').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modalMask').style.display = 'none';
+}
+document.getElementById('modalMask').onclick = (e) => {
+  if (e.target.id === 'modalMask') closeModal();
+};
+
+/* ================= 目标树 ================= */
+async function loadGoals() {
+  const treeEl = document.getElementById('goalTree');
+  try {
+    const data = await api('GET', '/goals?page=1&page_size=50');
+    const goals = data.list || [];
+    if (goals.length === 0) {
+      treeEl.innerHTML = '<div class="empty">还没有目标。点击「+ 新目标」创建你的第一个长期目标。</div>';
+      return;
+    }
+    let html = '';
+    for (const g of goals) {
+      html += `<div class="goal-item">
+        <div class="goal-head">
+          <span class="title">${esc(g.title)}</span>
+          <span class="meta">${g.target_date ? '目标 ' + g.target_date.slice(0,10) : ''}</span>
+          <button class="mini" onclick="showMilestoneModal(${g.id})">+ 阶段</button>
+          <button class="mini danger" onclick="delGoal(${g.id}, '${esc(g.title)}')">删除</button>
+        </div>
+        ${g.description ? `<div style="font-size:12px;color:#888780;margin-top:4px">${esc(g.description)}</div>` : ''}
+        <div class="ms-section" id="ms-${g.id}"><div class="empty" style="padding:10px 0;font-size:12px">加载中…</div></div>
+      </div>`;
+    }
+    treeEl.innerHTML = html;
+    for (const g of goals) loadMilestones(g.id);
+  } catch (err) { toast(err.message, true); }
+}
+
+async function loadMilestones(goalID) {
+  const el = document.getElementById('ms-' + goalID);
+  try {
+    const data = await api('GET', `/goals/${goalID}/milestones?page=1&page_size=50`);
+    const list = data.list || [];
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty" style="padding:10px 0;font-size:12px">还没有阶段，点「+ 阶段」拆解目标</div>';
+      return;
+    }
+    let html = '';
+    for (const m of list) {
+      html += `<div class="ms-item">
+        <div class="ms-head">
+          <span class="ms-title">${esc(m.title)}</span>
+          <button class="mini" onclick="showTaskModal(${m.id})">+ 任务</button>
+        </div>
+        <div class="task-list" id="tasks-${m.id}"><div style="font-size:12px;color:#888780;padding:4px 0">加载中…</div></div>
+      </div>`;
+    }
+    el.innerHTML = html;
+    for (const m of list) loadTasks(m.id);
+  } catch (err) { el.innerHTML = '<div class="empty">加载失败</div>'; }
+}
+
+async function loadTasks(milestoneID) {
+  const el = document.getElementById('tasks-' + milestoneID);
+  try {
+    const data = await api('GET', `/milestones/${milestoneID}/tasks?page=1&page_size=100`);
+    const list = data.list || [];
+    list.forEach(t => tasksCache[t.id] = t);
+    if (list.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:#888780;padding:4px 0">暂无任务</div>';
+      return;
+    }
+    el.innerHTML = list.map(t => `
+      <div class="task-item ${t.status === 2 ? 'done' : ''}">
+        <span class="tag status-${t.status}">${TASK_STATUS[t.status] || t.status}</span>
+        ${t.task_type ? `<span class="tag type">${t.task_type}</span>` : ''}
+        ${t.priority >= 3 ? `<span class="tag" style="background:#fcebeb;color:#a32d2d">${t.priority === 4 ? '紧急' : '高优'}</span>` : ''}
+        <span class="t-title">${esc(t.title)}</span>
+        <span style="font-size:11px;color:#888780">估 ${t.estimated_minutes || '?'}m${t.actual_minutes ? ' / 实 ' + t.actual_minutes + 'm' : ''}</span>
+        ${t.status === 0 ? `<button class="mini" onclick="startTimer(${t.id})">▶ 计时</button>` : ''}
+        ${t.status !== 2 ? `<button class="mini" onclick="doneTask(${t.id})">✓ 完成</button>` : ''}
+      </div>`).join('');
+  } catch (err) { el.innerHTML = '<div style="font-size:12px;color:#a32d2d">加载失败</div>'; }
+}
+
+function showGoalModal() {
+  openModal(`
+    <h3>新目标</h3>
+    <div class="field"><label>标题</label><input id="gTitle" placeholder="例如：3 个月学会 Go 微服务"></div>
+    <div class="field"><label>描述（可选）</label><textarea id="gDesc" rows="3"></textarea></div>
+    <div class="field"><label>目标日期（可选）</label><input type="date" id="gDate"></div>
+    <div class="btns">
+      <button onclick="closeModal()">取消</button>
+      <button class="primary" onclick="createGoal()">创建</button>
+    </div>`);
+}
+
+async function createGoal() {
+  try {
+    const body = { title: document.getElementById('gTitle').value.trim() };
+    const desc = document.getElementById('gDesc').value.trim();
+    if (desc) body.description = desc;
+    const d = document.getElementById('gDate').value;
+    if (d) body.target_date = d + 'T00:00:00+08:00';
+    await api('POST', '/goals', body);
+    closeModal(); toast('目标已创建'); loadGoals();
+  } catch (err) { toast(err.message, true); }
+}
+
+async function delGoal(id, title) {
+  if (!confirm(`删除目标「${title}」？其下所有阶段和任务都会删除。`)) return;
+  try { await api('DELETE', '/goals/' + id); toast('已删除'); loadGoals(); }
+  catch (err) { toast(err.message, true); }
+}
+
+function showMilestoneModal(goalID) {
+  openModal(`
+    <h3>新阶段</h3>
+    <div class="field"><label>标题</label><input id="mTitle" placeholder="例如：第一阶段 · 基础语法"></div>
+    <div class="field"><label>描述（可选）</label><textarea id="mDesc" rows="2"></textarea></div>
+    <div class="field"><label>目标日期（可选）</label><input type="date" id="mDate"></div>
+    <div class="btns">
+      <button onclick="closeModal()">取消</button>
+      <button class="primary" onclick="createMilestone(${goalID})">创建</button>
+    </div>`);
+}
+
+async function createMilestone(goalID) {
+  try {
+    const body = { title: document.getElementById('mTitle').value.trim() };
+    const desc = document.getElementById('mDesc').value.trim();
+    if (desc) body.description = desc;
+    const d = document.getElementById('mDate').value;
+    if (d) body.target_date = d + 'T00:00:00+08:00';
+    await api('POST', `/goals/${goalID}/milestones`, body);
+    closeModal(); toast('阶段已创建'); loadGoals();
+  } catch (err) { toast(err.message, true); }
+}
+
+function showTaskModal(milestoneID) {
+  openModal(`
+    <h3>新任务</h3>
+    <div class="field"><label>标题</label><input id="tTitle" placeholder="例如：读完《Go 语言圣经》第 10 章"></div>
+    <div class="field"><label>描述（可选）</label><textarea id="tDesc" rows="2"></textarea></div>
+    <div class="row">
+      <div class="field">
+        <label>类型（学习画像按此分类）</label>
+        <select id="tType">
+          <option value="">不分类</option>
+          <option value="coding">coding</option>
+          <option value="reading">reading</option>
+          <option value="writing">writing</option>
+          <option value="exercise">exercise</option>
+          <option value="meeting">meeting</option>
+          <option value="study">study</option>
+          <option value="other">other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>优先级</label>
+        <select id="tPriority">
+          <option value="2">正常</option>
+          <option value="1">低</option>
+          <option value="3">高优</option>
+          <option value="4">紧急</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>预计分钟</label><input type="number" id="tEst" placeholder="25" min="0"></div>
+      <div class="field"><label>截止时间（可选）</label><input type="datetime-local" id="tDue"></div>
+    </div>
+    <div class="btns">
+      <button onclick="closeModal()">取消</button>
+      <button class="primary" onclick="createTask(${milestoneID})">创建</button>
+    </div>`);
+}
+
+async function createTask(milestoneID) {
+  try {
+    const body = { title: document.getElementById('tTitle').value.trim() };
+    const desc = document.getElementById('tDesc').value.trim();
+    if (desc) body.description = desc;
+    const type = document.getElementById('tType').value;
+    if (type) body.task_type = type;
+    body.priority = parseInt(document.getElementById('tPriority').value);
+    const est = parseInt(document.getElementById('tEst').value);
+    if (est > 0) body.estimated_minutes = est;
+    const due = document.getElementById('tDue').value;
+    if (due) body.due_date = due + ':00+08:00';
+    await api('POST', `/milestones/${milestoneID}/tasks`, body);
+    closeModal(); toast('任务已创建'); loadGoals();
+  } catch (err) { toast(err.message, true); }
+}
+
+async function doneTask(id) {
+  try {
+    await api('PATCH', `/tasks/${id}/status`, { status: 2 });
+    toast('任务完成'); loadGoals();
+  } catch (err) { toast(err.message, true); }
+}
+
+/* ================= 日程 ================= */
+async function loadSchedule() {
+  const el = document.getElementById('scheduleList');
+  const date = document.getElementById('scheduleDate').value || todayStr();
+  try {
+    const data = await api('GET', '/schedule?date=' + date);
+    const blocks = data.blocks || [];
+    if (blocks.length === 0) {
+      el.innerHTML = '<div class="empty">这一天还没有安排。点「智能排程」让系统帮你排。</div>';
+      return;
+    }
+    // 补齐任务标题
+    await ensureTaskTitles(blocks.map(b => b.task_id));
+    el.innerHTML = blocks.map(b => `
+      <div class="block-item ${b.status === 1 ? 'b-active' : ''}">
+        <span class="time">${fmtTime(b.start_at)} – ${fmtTime(b.end_at)}</span>
+        <span class="b-title">
+          ${esc(tasksCache[b.task_id]?.title || '任务 #' + b.task_id)}
+          ${tasksCache[b.task_id]?.task_type ? `<span class="tag type">${tasksCache[b.task_id].task_type}</span>` : ''}
+          <div class="reason">${esc(b.reason)}</div>
+        </span>
+        <span class="score">score ${b.priority_score}</span>
+        <span class="tag status-${b.status}">${BLOCK_STATUS[b.status] || b.status}</span>
+        ${b.status === 0 ? `<button class="mini primary" onclick="startTimer(${b.task_id}, ${b.id})">▶ 开始</button>` : ''}
+        <button class="mini danger" onclick="delBlock(${b.id})">删除</button>
+      </div>`).join('');
+  } catch (err) { el.innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+}
+
+async function ensureTaskTitles(ids) {
+  const missing = [...new Set(ids)].filter(id => !tasksCache[id]);
+  if (missing.length === 0) return;
+  try {
+    const data = await api('GET', '/tasks?page=1&page_size=100');
+    (data.list || []).forEach(t => tasksCache[t.id] = t);
+  } catch (e) { /* 忽略，展示降级 */ }
+}
+
+async function planDay(replace) {
+  const date = document.getElementById('scheduleDate').value || todayStr();
+  try {
+    const data = await api('POST', '/schedule/plan', { date, replace_existing: replace });
+    toast(`已排 ${data.planned_count} 个任务` + (data.skipped_count > 0 ? `，跳过 ${data.skipped_count} 个（放不下）` : ''));
+    loadSchedule();
+  } catch (err) { toast(err.message, true); }
+}
+
+async function replanDay() {
+  const date = document.getElementById('scheduleDate').value || todayStr();
+  try {
+    const data = await api('POST', '/schedule/replan', { date });
+    toast(`已重排 ${data.planned_count} 个任务（使用最新学习到的估时）`);
+    loadSchedule();
+  } catch (err) { toast(err.message, true); }
+}
+
+async function delBlock(id) {
+  try { await api('DELETE', '/schedule/' + id); toast('已删除'); loadSchedule(); }
+  catch (err) { toast(err.message, true); }
+}
+
+/* ================= 计时器 ================= */
+async function startTimer(taskID, blockID) {
+  try {
+    const body = { task_id: taskID };
+    if (blockID) body.schedule_block_id = blockID;
+    await api('POST', '/timer/start', body);
+    toast('开始计时！');
+    // 跳到计时器 tab
+    document.querySelector('.topbar nav a[data-tab=timer]').click();
+    pollActiveTimer();
+  } catch (err) { toast(err.message, true); }
+}
+
+async function pollActiveTimer() {
+  const el = document.getElementById('timerArea');
+  try {
+    const data = await api('GET', '/timer/active');
+    activeTimer = data;
+    clearInterval(tickHandle);
+    if (!data) {
+      el.innerHTML = `<div class="empty">当前没有计时中的任务<br><span style="font-size:12px">在「目标」或「日程」页点 ▶ 开始</span></div>`;
+      return;
+    }
+    renderActiveTimer();
+    tickHandle = setInterval(renderActiveTimer, 1000);
+    // 联动刷新目标树状态
+    loadGoals();
+  } catch (err) {
+    el.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+function renderActiveTimer() {
+  const el = document.getElementById('timerArea');
+  if (!activeTimer) return;
+  const t = tasksCache[activeTimer.task_id];
+  el.innerHTML = `
+    <div class="timer-state">
+      ${TIMER_STATUS[activeTimer.status] || activeTimer.status} ·
+      ${esc(t?.title || '任务 #' + activeTimer.task_id)}
+      ${t?.estimated_minutes ? `<span style="color:#888780">（预计 ${t.estimated_minutes} 分钟）</span>` : ''}
+    </div>
+    <div class="timer-big" id="timerBig">${fmtDur(activeTimer.current_elapsed_seconds || 0)}</div>
+    <div class="timer-btns">
+      ${activeTimer.status === 0 ? `<button onclick="timerAction('pause')">⏸ 暂停</button>` : ''}
+      ${activeTimer.status === 1 ? `<button class="primary" onclick="timerAction('resume')">▶ 继续</button>` : ''}
+      <button class="primary" style="background:#3b6d11;border-color:#3b6d11" onclick="timerAction('complete')">✓ 完成</button>
+      <button class="danger" onclick="timerAction('abandon')">✕ 放弃</button>
+    </div>`;
+}
+
+async function timerAction(action) {
+  if (!activeTimer) return;
+  try {
+    await api('POST', '/timer/' + action, { session_id: activeTimer.id });
+    clearInterval(tickHandle);
+    if (action === 'complete') {
+      toast('完成！执行已记录，画像已更新 🎉');
+    } else if (action === 'abandon') {
+      toast('已放弃');
+    }
+    activeTimer = null;
+    pollActiveTimer();
+    loadTimerHistory();
+  } catch (err) { toast(err.message, true); }
+}
+
+async function loadTimerHistory() {
+  const el = document.getElementById('timerHistory');
+  try {
+    const data = await api('GET', '/timer/history?limit=15');
+    const list = Array.isArray(data) ? data : (data?.list || []);
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty">还没有历史会话</div>';
+      return;
+    }
+    await ensureTaskTitles(list.map(s => s.task_id));
+    el.innerHTML = `<table>
+      <tr><th>任务</th><th>开始</th><th>时长</th><th>状态</th></tr>
+      ${list.map(s => `<tr>
+        <td>${esc(tasksCache[s.task_id]?.title || '#' + s.task_id)}</td>
+        <td>${fmtDT(s.started_at)}</td>
+        <td>${fmtDur(s.accumulated_seconds || 0)}</td>
+        <td><span class="tag ${s.status === 2 ? 'status-2' : s.status === 3 ? 'status-3' : 'status-1'}">${TIMER_STATUS[s.status] || s.status}</span></td>
+      </tr>`).join('')}
+    </table>`;
+  } catch (err) { el.innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+}
+
+/* ================= 画像 ================= */
+async function loadProfiles() {
+  const el = document.getElementById('profileList');
+  try {
+    const data = await api('GET', '/user/time-profiles');
+    const list = Array.isArray(data) ? data : (data?.list || []);
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty">还没有学习数据。完成几个带类型的任务后，这里会出现你的耗时画像。</div>';
+      return;
+    }
+    el.innerHTML = `<table>
+      <tr><th>类型</th><th>初始估计</th><th>实际均值</th><th>当前采用</th><th>样本数</th><th>操作</th></tr>
+      ${list.map(p => `<tr>
+        <td><span class="tag type">${esc(p.task_type)}</span></td>
+        <td>${p.initial_estimate_minutes} 分钟</td>
+        <td>${p.rolling_avg_minutes} 分钟</td>
+        <td><b style="color:#185fa5">${p.adjusted_estimate_minutes} 分钟</b></td>
+        <td>${p.sample_count} 次</td>
+        <td><button class="mini danger" onclick="resetProfile('${esc(p.task_type)}')">重置</button></td>
+      </tr>`).join('')}
+    </table>`;
+  } catch (err) { el.innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+}
+
+async function resetProfile(type) {
+  if (!confirm(`重置「${type}」画像？系统会重新学习这类任务的耗时。`)) return;
+  try { await api('DELETE', '/user/time-profiles/' + type); toast('已重置'); loadProfiles(); }
+  catch (err) { toast(err.message, true); }
+}
+
+async function loadExecutions() {
+  const el = document.getElementById('executionList');
+  try {
+    const data = await api('GET', '/executions?page=1&page_size=15');
+    const list = Array.isArray(data) ? data : (data?.list || []);
+    if (list.length === 0) {
+      el.innerHTML = '<div class="empty">还没有执行记录</div>';
+      return;
+    }
+    await ensureTaskTitles(list.map(e => e.task_id));
+    el.innerHTML = `<table>
+      <tr><th>任务</th><th>类型</th><th>计划</th><th>实际</th><th>超时</th><th>结果</th></tr>
+      ${list.map(e => {
+        const over = (e.actual_minutes - e.planned_minutes);
+        return `<tr>
+          <td>${esc(tasksCache[e.task_id]?.title || '#' + e.task_id)}</td>
+          <td>${e.task_type ? `<span class="tag type">${esc(e.task_type)}</span>` : '-'}</td>
+          <td>${e.planned_minutes}m</td>
+          <td>${e.actual_minutes}m</td>
+          <td style="color:${over > 0 ? '#a32d2d' : '#3b6d11'}">${over > 0 ? '+' + over + 'm' : over + 'm'}</td>
+          <td><span class="tag ${e.result === 1 ? 'status-2' : 'status-3'}">${e.result === 1 ? '完成' : '放弃'}</span></td>
+        </tr>`;
+      }).join('')}
+    </table>`;
+  } catch (err) { el.innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+}
+
+/* ================= 启动 ================= */
+if (token) {
+  enterApp();
+}
+</script>
+</body>
+</html>

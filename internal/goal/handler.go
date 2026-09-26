@@ -40,7 +40,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Get GET /api/v1/goals/:id
 func (h *Handler) Get(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("goalID"), 10, 64)
 	if err != nil {
 		response.Fail(c, response.CodeInvalidParam, "id 无效")
 		return
@@ -70,7 +70,7 @@ func (h *Handler) List(c *gin.Context) {
 
 // Update PUT /api/v1/goals/:id
 func (h *Handler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("goalID"), 10, 64)
 	if err != nil {
 		response.Fail(c, response.CodeInvalidParam, "id 无效")
 		return
@@ -91,7 +91,7 @@ func (h *Handler) Update(c *gin.Context) {
 
 // Delete DELETE /api/v1/goals/:id
 func (h *Handler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseUint(c.Param("goalID"), 10, 64)
 	if err != nil {
 		response.Fail(c, response.CodeInvalidParam, "id 无效")
 		return
